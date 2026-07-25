@@ -69,6 +69,18 @@ function App() {
           </div>
         </div>
       </section>
+      <section id="pricing" className="py-20 px-6 bg-gray-50 text-center">
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          Free for Everyone
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+          Our platform is completely free to use — no hidden fees, no credit card required.
+          Every business, big or small, deserves access to powerful trade intelligence tools.
+        </p>
+        <button className="px-8 py-4 bg-blue-600 text-white text-lg rounded-lg hover:bg-blue-700">
+          Get Started Free
+        </button>
+      </section>
       <footer className="bg-gray-900 text-gray-300 py-10 px-6 mt-10">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-white font-semibold">
