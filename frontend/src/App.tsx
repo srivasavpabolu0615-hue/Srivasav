@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -6,6 +6,25 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+
+  // Image analysis feature state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState('');
+  const [analysisError, setAnalysisError] = useState('');
+
+  // NEW: Chat assistant state
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // NEW: auto-scroll chat to the latest message
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   const openModal = (mode: string) => {
     setModalMode(mode);
@@ -41,6 +60,83 @@ function App() {
       }
     } catch (err) {
       setMessage('Could not connect to the server.');
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setAnalysisResult('');
+      setAnalysisError('');
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!selectedFile) return;
+
+    setIsAnalyzing(true);
+    setAnalysisResult('');
+    setAnalysisError('');
+
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+
+    try {
+      const response = await fetch('http://localhost:5000/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAnalysisError(data.error || 'Something went wrong.');
+      } else {
+        setAnalysisResult(data.explanation);
+      }
+    } catch (err) {
+      setAnalysisError('Could not connect to the server.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // NEW: sends a chat message and gets the AI's reply
+  const handleSendChat = async () => {
+    if (!chatInput.trim()) return;
+
+    const newMessages = [...chatMessages, { role: 'user', text: chatInput }];
+    setChatMessages(newMessages);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setChatMessages([...newMessages, { role: 'assistant', text: data.error || 'Something went wrong.' }]);
+      } else {
+        setChatMessages([...newMessages, { role: 'assistant', text: data.reply }]);
+      }
+    } catch (err) {
+      setChatMessages([...newMessages, { role: 'assistant', text: 'Could not connect to the server.' }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleChatKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendChat();
     }
   };
 
@@ -86,6 +182,52 @@ function App() {
         >
           Get Started Free
         </button>
+      </section>
+
+      <section id="try-it-now" className="py-20 px-6 max-w-3xl mx-auto text-center">
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          Try It Now
+        </h2>
+        <p className="text-gray-600 mb-8">
+          Upload a photo of any product label — in any language — and see it explained in English.
+        </p>
+
+        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="mb-4"
+          />
+
+          {previewUrl && (
+            <div className="mb-4">
+              <img
+                src={previewUrl}
+                alt="Selected preview"
+                className="max-h-64 mx-auto rounded-lg shadow"
+              />
+            </div>
+          )}
+
+          <button
+            onClick={handleAnalyze}
+            disabled={!selectedFile || isAnalyzing}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            {isAnalyzing ? 'Analyzing...' : 'Analyze Label'}
+          </button>
+        </div>
+
+        {analysisError && (
+          <p className="mt-6 text-red-600">{analysisError}</p>
+        )}
+
+        {analysisResult && (
+          <div className="mt-8 text-left bg-gray-50 border border-gray-200 rounded-xl p-6 whitespace-pre-wrap text-gray-800">
+            {analysisResult}
+          </div>
+        )}
       </section>
 
       <section id="features" className="py-20 px-6 max-w-6xl mx-auto">
@@ -213,6 +355,67 @@ function App() {
                 </>
               )}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Floating chat button */}
+      <button
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        className="fixed bottom-6 right-6 bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700 z-50 text-2xl"
+      >
+        {isChatOpen ? '✕' : '💬'}
+      </button>
+
+      {/* NEW: Chat window */}
+      {isChatOpen && (
+        <div className="fixed bottom-24 right-6 w-80 h-96 bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
+          <div className="bg-blue-600 text-white px-4 py-3 rounded-t-xl font-semibold">
+            AI Assistant
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+            {chatMessages.length === 0 && (
+              <p className="text-gray-400 text-sm text-center mt-8">
+                Ask me anything about products, labels, or how to use this site!
+              </p>
+            )}
+            {chatMessages.map((msg, index) => (
+              <div
+                key={index}
+                className={`max-w-[85%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
+                  msg.role === 'user'
+                    ? 'bg-blue-600 text-white self-end'
+                    : 'bg-gray-100 text-gray-800 self-start'
+                }`}
+              >
+                {msg.text}
+              </div>
+            ))}
+            {isChatLoading && (
+              <div className="bg-gray-100 text-gray-500 text-sm px-3 py-2 rounded-lg self-start">
+                Typing...
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div className="border-t border-gray-200 p-3 flex gap-2">
+            <textarea
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={handleChatKeyDown}
+              placeholder="Type a message..."
+              rows={1}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+            />
+            <button
+              onClick={handleSendChat}
+              disabled={isChatLoading || !chatInput.trim()}
+              className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 text-sm"
+            >
+              Send
+            </button>
           </div>
         </div>
       )}

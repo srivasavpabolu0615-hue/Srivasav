@@ -3,6 +3,8 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
 const cors = require('cors');
+const multer = require('multer');
+const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const PORT = 5000;
@@ -20,6 +22,12 @@ const pool = new Pool({
     rejectUnauthorized: false
   }
 });
+
+// Set up multer to hold uploaded files temporarily in memory
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Set up our connection to Gemini
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.get('/', (req, res) => {
   res.send('Hello! Your backend server is working.');
@@ -92,6 +100,77 @@ app.post('/login', async (req, res) => {
     res.status(200).json({
       message: 'Login successful!',
       user: { id: user.id, email: user.email }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+  }
+});
+
+// NEW: Analyze an uploaded product label image
+app.post('/analyze', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image was uploaded.' });
+  }
+
+  try {
+    const base64Image = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype; // e.g. 'image/jpeg' or 'image/png'
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-latest',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: 'This is a photo of a product label, possibly in a foreign language. First, write a clear, natural English paragraph explaining the product: its name, volume or weight, ingredients or chemicals, and any warnings. If parts are blurry or unclear, mention that within the paragraph, but still explain what you can read. Do not use markdown formatting like asterisks or headers in this paragraph. After the paragraph, add a line that says exactly "Word-by-word breakdown:" and then list each distinct word or short phrase from the label in its original language, followed by an arrow and its English meaning, one per line, like this format: original word or phrase -> English meaning.'
+            },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Image
+              }
+            }
+          ]
+        }
+      ]
+    });
+
+    res.status(200).json({
+      explanation: response.text
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong while analyzing the image.' });
+  }
+});
+
+// NEW: Chat assistant route
+app.post('/chat', async (req, res) => {
+  const { messages } = req.body;
+
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'Messages are required.' });
+  }
+
+  try {
+    // Convert our simple {role, text} messages into the format Gemini expects
+    const contents = messages.map((msg) => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.text }]
+    }));
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-latest',
+      contents: contents,
+      config: {
+        systemInstruction: 'You are a helpful assistant for a product intelligence platform. Users may ask about product labels, ingredients, translations, trade terms, or general questions about using the site. Answer clearly and concisely in plain English, without markdown formatting like asterisks or headers.'
+      }
+    });
+
+    res.status(200).json({
+      reply: response.text
     });
   } catch (err) {
     console.error(err);
