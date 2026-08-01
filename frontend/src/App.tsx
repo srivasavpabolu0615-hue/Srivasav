@@ -7,7 +7,7 @@ function App() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
-  // NEW: tracks whether someone is currently logged in
+  // tracks whether someone is currently logged in
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
 
   // Image analysis feature state
@@ -29,7 +29,7 @@ function App() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // NEW: check if user is already logged in when the page loads
+  // check if user is already logged in when the page loads
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
     if (savedEmail) {
@@ -49,7 +49,7 @@ function App() {
     setIsModalOpen(false);
   };
 
-  // NEW: logs the user out
+  // logs the user out
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
@@ -63,7 +63,7 @@ function App() {
     const endpoint = modalMode === 'login' ? '/login' : '/register';
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`https://srivasav-backend.onrender.com${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -110,7 +110,7 @@ function App() {
     formData.append('image', selectedFile);
 
     try {
-      const response = await fetch('http://localhost:5000/analyze', {
+      const response = await fetch('https://srivasav-backend.onrender.com/analyze', {
         method: 'POST',
         body: formData,
       });
@@ -138,7 +138,7 @@ function App() {
     setIsChatLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/chat', {
+      const response = await fetch('https://srivasav-backend.onrender.com/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: newMessages }),
