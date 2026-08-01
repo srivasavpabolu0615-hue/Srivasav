@@ -5,6 +5,7 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
 const { GoogleGenAI } = require('@google/genai');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = 5000;
@@ -96,10 +97,17 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    // Success!
+    // Success! Create a token so the frontend can stay logged in
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.status(200).json({
       message: 'Login successful!',
-      user: { id: user.id, email: user.email }
+      user: { id: user.id, email: user.email },
+      token: token
     });
   } catch (err) {
     console.error(err);

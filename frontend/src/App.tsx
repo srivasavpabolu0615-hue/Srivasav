@@ -7,6 +7,9 @@ function App() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
+  // NEW: tracks whether someone is currently logged in
+  const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
+
   // Image analysis feature state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -14,17 +17,25 @@ function App() {
   const [analysisResult, setAnalysisResult] = useState('');
   const [analysisError, setAnalysisError] = useState('');
 
-  // NEW: Chat assistant state
+  // Chat assistant state
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // NEW: auto-scroll chat to the latest message
+  // auto-scroll chat to the latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
+
+  // NEW: check if user is already logged in when the page loads
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('userEmail');
+    if (savedEmail) {
+      setLoggedInEmail(savedEmail);
+    }
+  }, []);
 
   const openModal = (mode: string) => {
     setModalMode(mode);
@@ -36,6 +47,13 @@ function App() {
 
   const closeModal = () => {
     setIsModalOpen(false);
+  };
+
+  // NEW: logs the user out
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    setLoggedInEmail(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,6 +75,14 @@ function App() {
         setMessage(data.error || 'Something went wrong.');
       } else {
         setMessage(data.message);
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('userEmail', data.user.email);
+          setLoggedInEmail(data.user.email);
+          setTimeout(() => {
+            closeModal();
+          }, 1000);
+        }
       }
     } catch (err) {
       setMessage('Could not connect to the server.');
@@ -103,7 +129,6 @@ function App() {
     }
   };
 
-  // NEW: sends a chat message and gets the AI's reply
   const handleSendChat = async () => {
     if (!chatInput.trim()) return;
 
@@ -152,19 +177,33 @@ function App() {
           <a href="#pricing" className="hover:text-blue-600">Pricing</a>
           <a href="#contact" className="hover:text-blue-600">Contact</a>
         </div>
-        <div className="flex gap-4">
-          <button
-            onClick={() => openModal('login')}
-            className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
-          >
-            Login
-          </button>
-          <button
-            onClick={() => openModal('register')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Register
-          </button>
+        <div className="flex gap-4 items-center">
+          {loggedInEmail ? (
+            <>
+              <span className="text-gray-700 text-sm">Logged in as {loggedInEmail}</span>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50"
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => openModal('login')}
+                className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => openModal('register')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Register
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -359,7 +398,7 @@ function App() {
         </div>
       )}
 
-      {/* NEW: Floating chat button */}
+      {/* Floating chat button */}
       <button
         onClick={() => setIsChatOpen(!isChatOpen)}
         className="fixed bottom-6 right-6 bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700 z-50 text-2xl"
@@ -367,7 +406,7 @@ function App() {
         {isChatOpen ? '✕' : '💬'}
       </button>
 
-      {/* NEW: Chat window */}
+      {/* Chat window */}
       {isChatOpen && (
         <div className="fixed bottom-24 right-6 w-80 h-96 bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
           <div className="bg-blue-600 text-white px-4 py-3 rounded-t-xl font-semibold">
