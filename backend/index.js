@@ -30,6 +30,39 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Set up our connection to Gemini
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// NEW: Daily usage limit safety check
+const DAILY_LIMIT = 800;
+
+async function checkAndIncrementUsage() {
+  const today = new Date().toISOString().split('T')[0]; // e.g. "2026-08-01"
+
+  // Make sure today's row exists
+  await pool.query(
+    'INSERT INTO api_usage (usage_date, request_count) VALUES ($1, 0) ON CONFLICT (usage_date) DO NOTHING',
+    [today]
+  );
+
+  // Check today's count
+  const result = await pool.query(
+    'SELECT request_count FROM api_usage WHERE usage_date = $1',
+    [today]
+  );
+
+  const currentCount = result.rows[0].request_count;
+
+  if (currentCount >= DAILY_LIMIT) {
+    return false; // limit reached
+  }
+
+  // Increment and allow
+  await pool.query(
+    'UPDATE api_usage SET request_count = request_count + 1 WHERE usage_date = $1',
+    [today]
+  );
+
+  return true; // allowed
+}
+
 app.get('/', (req, res) => {
   res.send('Hello! Your backend server is working.');
 });
@@ -121,6 +154,11 @@ app.post('/analyze', upload.single('image'), async (req, res) => {
     return res.status(400).json({ error: 'No image was uploaded.' });
   }
 
+  const allowed = await checkAndIncrementUsage();
+  if (!allowed) {
+    return res.status(429).json({ error: "We've reached today's usage limit to keep this service free. Please try again tomorrow." });
+  }
+
   try {
     const base64Image = req.file.buffer.toString('base64');
     const mimeType = req.file.mimetype; // e.g. 'image/jpeg' or 'image/png'
@@ -160,6 +198,11 @@ app.post('/chat', async (req, res) => {
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'Messages are required.' });
+  }
+
+  const allowed = await checkAndIncrementUsage();
+  if (!allowed) {
+    return res.status(429).json({ error: "We've reached today's usage limit to keep this service free. Please try again tomorrow." });
   }
 
   try {
