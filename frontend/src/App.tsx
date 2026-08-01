@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 
+const BACKEND_URL = 'https://srivasav-backend.onrender.com';
+
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('login'); // 'login' or 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // tracks whether someone is currently logged in
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
@@ -56,14 +59,39 @@ function App() {
     setLoggedInEmail(null);
   };
 
+  // NEW: friendlier, more specific error messages
+  const getFriendlyError = (context: 'auth' | 'analyze' | 'chat', data: any, response?: Response) => {
+    if (data?.error) {
+      // Pass through specific backend messages, they're already clear
+      return data.error;
+    }
+    if (response && response.status === 429) {
+      return "We're getting a lot of requests right now. Please wait a moment and try again.";
+    }
+    if (response && response.status >= 500) {
+      return 'Our server is temporarily unavailable. Please try again in a minute.';
+    }
+    if (context === 'auth') return 'Could not log you in right now. Please try again.';
+    if (context === 'analyze') return 'Could not analyze this image right now. Please try again.';
+    return 'Something went wrong. Please try again.';
+  };
+
+  const getNetworkErrorMessage = () => {
+    if (!navigator.onLine) {
+      return "You appear to be offline. Please check your internet connection and try again.";
+    }
+    return 'Could not reach the server. It may be starting up — please wait a few seconds and try again.';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
+    setIsSubmitting(true);
 
     const endpoint = modalMode === 'login' ? '/login' : '/register';
 
     try {
-      const response = await fetch(`https://srivasav-backend.onrender.com${endpoint}`, {
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -72,7 +100,7 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error || 'Something went wrong.');
+        setMessage(getFriendlyError('auth', data, response));
       } else {
         setMessage(data.message);
         if (data.token) {
@@ -85,13 +113,19 @@ function App() {
         }
       }
     } catch (err) {
-      setMessage('Could not connect to the server.');
+      setMessage(getNetworkErrorMessage());
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        setAnalysisError('Please choose an image file (JPG, PNG, etc).');
+        return;
+      }
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setAnalysisResult('');
@@ -110,7 +144,7 @@ function App() {
     formData.append('image', selectedFile);
 
     try {
-      const response = await fetch('https://srivasav-backend.onrender.com/analyze', {
+      const response = await fetch(`${BACKEND_URL}/analyze`, {
         method: 'POST',
         body: formData,
       });
@@ -118,12 +152,12 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        setAnalysisError(data.error || 'Something went wrong.');
+        setAnalysisError(getFriendlyError('analyze', data, response));
       } else {
         setAnalysisResult(data.explanation);
       }
     } catch (err) {
-      setAnalysisError('Could not connect to the server.');
+      setAnalysisError(getNetworkErrorMessage());
     } finally {
       setIsAnalyzing(false);
     }
@@ -138,7 +172,7 @@ function App() {
     setIsChatLoading(true);
 
     try {
-      const response = await fetch('https://srivasav-backend.onrender.com/chat', {
+      const response = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: newMessages }),
@@ -147,12 +181,12 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        setChatMessages([...newMessages, { role: 'assistant', text: data.error || 'Something went wrong.' }]);
+        setChatMessages([...newMessages, { role: 'assistant', text: getFriendlyError('chat', data, response) }]);
       } else {
         setChatMessages([...newMessages, { role: 'assistant', text: data.reply }]);
       }
     } catch (err) {
-      setChatMessages([...newMessages, { role: 'assistant', text: 'Could not connect to the server.' }]);
+      setChatMessages([...newMessages, { role: 'assistant', text: getNetworkErrorMessage() }]);
     } finally {
       setIsChatLoading(false);
     }
@@ -167,23 +201,26 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      <nav className="flex items-center justify-between px-8 py-4 shadow-md">
-        <div className="text-xl font-bold text-blue-600">
+      {/* Navbar - responsive: links hide on small screens, logo shrinks */}
+      <nav className="flex items-center justify-between px-4 sm:px-8 py-4 shadow-md">
+        <div className="text-base sm:text-xl font-bold text-blue-600 truncate">
           Global AI Product Intelligence
         </div>
-        <div className="flex gap-6 text-gray-700">
+        <div className="hidden md:flex gap-6 text-gray-700">
           <a href="#about" className="hover:text-blue-600">About</a>
           <a href="#features" className="hover:text-blue-600">Features</a>
           <a href="#pricing" className="hover:text-blue-600">Pricing</a>
           <a href="#contact" className="hover:text-blue-600">Contact</a>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 sm:gap-4 items-center flex-shrink-0">
           {loggedInEmail ? (
             <>
-              <span className="text-gray-700 text-sm">Logged in as {loggedInEmail}</span>
+              <span className="hidden sm:inline text-gray-700 text-sm truncate max-w-[140px]">
+                Logged in as {loggedInEmail}
+              </span>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50"
+                className="px-3 py-2 text-sm text-red-600 border border-red-600 rounded-lg hover:bg-red-50 whitespace-nowrap"
               >
                 Log Out
               </button>
@@ -192,13 +229,13 @@ function App() {
             <>
               <button
                 onClick={() => openModal('login')}
-                className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+                className="px-3 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 whitespace-nowrap"
               >
                 Login
               </button>
               <button
                 onClick={() => openModal('register')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
               >
                 Register
               </button>
@@ -207,36 +244,36 @@ function App() {
         </div>
       </nav>
 
-      <section className="text-center py-24 px-6 bg-gradient-to-b from-blue-50 to-white">
-        <h1 className="text-5xl font-bold text-gray-900 mb-6">
+      <section className="text-center py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-b from-blue-50 to-white">
+        <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-6">
           Understand Any Product,<br />From Any Country, Instantly
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+        <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
           AI-powered translation, classification, and trade intelligence
           for importers, exporters, and compliance teams worldwide.
         </p>
         <button
           onClick={() => openModal('register')}
-          className="px-8 py-4 bg-blue-600 text-white text-lg rounded-lg hover:bg-blue-700"
+          className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white text-base sm:text-lg rounded-lg hover:bg-blue-700"
         >
           Get Started Free
         </button>
       </section>
 
-      <section id="try-it-now" className="py-20 px-6 max-w-3xl mx-auto text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+      <section id="try-it-now" className="py-16 sm:py-20 px-4 sm:px-6 max-w-3xl mx-auto text-center">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
           Try It Now
         </h2>
         <p className="text-gray-600 mb-8">
           Upload a photo of any product label — in any language — and see it explained in English.
         </p>
 
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8">
+        <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-8">
           <input
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            className="mb-4"
+            className="mb-4 max-w-full text-sm"
           />
 
           {previewUrl && (
@@ -254,29 +291,29 @@ function App() {
             disabled={!selectedFile || isAnalyzing}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {isAnalyzing ? 'Analyzing...' : 'Analyze Label'}
+            {isAnalyzing ? 'Analyzing... (this can take up to 30s)' : 'Analyze Label'}
           </button>
         </div>
 
         {analysisError && (
-          <p className="mt-6 text-red-600">{analysisError}</p>
+          <p className="mt-6 text-red-600 text-sm sm:text-base">{analysisError}</p>
         )}
 
         {analysisResult && (
-          <div className="mt-8 text-left bg-gray-50 border border-gray-200 rounded-xl p-6 whitespace-pre-wrap text-gray-800">
+          <div className="mt-8 text-left bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 whitespace-pre-wrap text-gray-800 text-sm sm:text-base">
             {analysisResult}
           </div>
         )}
       </section>
 
-      <section id="features" className="py-20 px-6 max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
+      <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 max-w-6xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-4">
           Everything You Need for Global Trade
         </h2>
         <p className="text-center text-gray-600 mb-12">
           Powerful AI tools built for importers, exporters, and compliance teams
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           <div className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               AI Translation
@@ -307,8 +344,8 @@ function App() {
         </div>
       </section>
 
-      <section id="pricing" className="py-20 px-6 bg-gray-50 text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+      <section id="pricing" className="py-16 sm:py-20 px-4 sm:px-6 bg-gray-50 text-center">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
           Free for Everyone
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto mb-8">
@@ -317,18 +354,18 @@ function App() {
         </p>
         <button
           onClick={() => openModal('register')}
-          className="px-8 py-4 bg-blue-600 text-white text-lg rounded-lg hover:bg-blue-700"
+          className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white text-base sm:text-lg rounded-lg hover:bg-blue-700"
         >
           Get Started Free
         </button>
       </section>
 
-      <footer className="bg-gray-900 text-gray-300 py-10 px-6 mt-10">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <footer className="bg-gray-900 text-gray-300 py-10 px-4 sm:px-6 mt-10">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
           <div className="text-white font-semibold">
             Global AI Product Intelligence
           </div>
-          <div className="flex gap-6 text-sm">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm">
             <a href="#about" className="hover:text-white">About</a>
             <a href="#features" className="hover:text-white">Features</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
@@ -340,16 +377,17 @@ function App() {
         </div>
       </footer>
 
+      {/* Login/Register modal - responsive width & padding */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 w-full max-w-md relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
             >
               ✕
             </button>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">
               {modalMode === 'login' ? 'Log In' : 'Create an Account'}
             </h2>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -367,13 +405,17 @@ function App() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 className="border border-gray-300 rounded-lg px-4 py-2"
               />
               <button
                 type="submit"
-                className="bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700"
+                disabled={isSubmitting}
+                className="bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700 disabled:bg-gray-300"
               >
-                {modalMode === 'login' ? 'Log In' : 'Register'}
+                {isSubmitting
+                  ? 'Please wait...'
+                  : modalMode === 'login' ? 'Log In' : 'Register'}
               </button>
             </form>
             {message && (
@@ -406,11 +448,12 @@ function App() {
         {isChatOpen ? '✕' : '💬'}
       </button>
 
-      {/* Chat window */}
+      {/* Chat window - responsive: near full-screen on mobile, fixed box on larger screens */}
       {isChatOpen && (
-        <div className="fixed bottom-24 right-6 w-80 h-96 bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
-          <div className="bg-blue-600 text-white px-4 py-3 rounded-t-xl font-semibold">
+        <div className="fixed bottom-0 right-0 sm:bottom-24 sm:right-6 w-full h-[80vh] sm:w-80 sm:h-96 bg-white border border-gray-300 sm:rounded-xl shadow-xl flex flex-col z-50">
+          <div className="bg-blue-600 text-white px-4 py-3 sm:rounded-t-xl font-semibold flex justify-between items-center">
             AI Assistant
+            <button onClick={() => setIsChatOpen(false)} className="sm:hidden text-white text-xl">✕</button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
