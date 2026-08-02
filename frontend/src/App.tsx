@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 
-const BACKEND_URL = 'https://srivasav-backend.onrender.com';
+const BACKEND_URL = 'https://global-label-decode-backend.onrender.com';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,7 +59,7 @@ function App() {
     setLoggedInEmail(null);
   };
 
-  // NEW: friendlier, more specific error messages
+  // friendlier, more specific error messages
   const getFriendlyError = (context: 'auth' | 'analyze' | 'chat', data: any, response?: Response) => {
     if (data?.error) {
       // Pass through specific backend messages, they're already clear
@@ -371,8 +371,10 @@ function App() {
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <a href="#contact" className="hover:text-white">Contact</a>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 text-center">
             © 2026 Global AI Product Intelligence. All rights reserved.
+            <br />
+            Made by Srujan
           </div>
         </div>
       </footer>
