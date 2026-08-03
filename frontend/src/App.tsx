@@ -10,29 +10,24 @@ function App() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // tracks whether someone is currently logged in
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
 
-  // Image analysis feature state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState('');
   const [analysisError, setAnalysisError] = useState('');
 
-  // Chat assistant state
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // auto-scroll chat to the latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // check if user is already logged in when the page loads
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
     if (savedEmail) {
@@ -52,7 +47,6 @@ function App() {
     setIsModalOpen(false);
   };
 
-  // logs the user out
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
@@ -60,7 +54,6 @@ function App() {
     setIsChatOpen(false);
   };
 
-  // friendlier, more specific error messages
   const getFriendlyError = (context: 'auth' | 'analyze' | 'chat', data: any, response?: Response) => {
     if (data?.error) {
       return data.error;
@@ -201,7 +194,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar - responsive: links hide on small screens, logo shrinks */}
       <nav className="flex items-center justify-between px-4 sm:px-8 py-4 shadow-md">
         <div className="text-base sm:text-xl font-bold text-blue-600 truncate">
           Global AI Product Intelligence
@@ -379,7 +371,6 @@ function App() {
         </div>
       </footer>
 
-      {/* Login/Register modal - responsive width & padding */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
@@ -442,7 +433,6 @@ function App() {
         </div>
       )}
 
-      {/* Floating chat button - only visible when logged in */}
       {loggedInEmail && (
         <button
           onClick={() => setIsChatOpen(!isChatOpen)}
@@ -452,9 +442,8 @@ function App() {
         </button>
       )}
 
-      {/* Chat window - only visible when logged in AND opened */}
       {loggedInEmail && isChatOpen && (
-        <div className="fixed bottom-0 right-0 sm:bottom-24 sm:right-6 w-full h-[85vh] sm:w-96 sm:h-[min(28rem,70vh)] max-h-[85vh] bg-white border border-gray-300 sm:rounded-xl shadow-xl flex flex-col z-50">
+        <div className="fixed bottom-0 right-0 sm:bottom-24 sm:right-6 w-full h-[85vh] sm:w-96 sm:h-[min(28rem,calc(100vh-8rem))] bg-white border border-gray-300 sm:rounded-xl shadow-xl flex flex-col z-50">
           <div className="bg-blue-600 text-white px-4 py-3 sm:rounded-t-xl font-semibold flex justify-between items-center flex-shrink-0">
             AI Assistant
             <button onClick={() => setIsChatOpen(false)} className="sm:hidden text-white text-xl">✕</button>
