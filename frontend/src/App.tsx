@@ -57,12 +57,12 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     setLoggedInEmail(null);
+    setIsChatOpen(false);
   };
 
   // friendlier, more specific error messages
   const getFriendlyError = (context: 'auth' | 'analyze' | 'chat', data: any, response?: Response) => {
     if (data?.error) {
-      // Pass through specific backend messages, they're already clear
       return data.error;
     }
     if (response && response.status === 429) {
@@ -442,23 +442,25 @@ function App() {
         </div>
       )}
 
-      {/* Floating chat button */}
-      <button
-        onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700 z-50 text-2xl"
-      >
-        {isChatOpen ? '✕' : '💬'}
-      </button>
+      {/* Floating chat button - only visible when logged in */}
+      {loggedInEmail && (
+        <button
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          className="fixed bottom-6 right-6 bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700 z-50 text-2xl"
+        >
+          {isChatOpen ? '✕' : '💬'}
+        </button>
+      )}
 
-      {/* Chat window - responsive: near full-screen on mobile, fixed box on larger screens */}
-      {isChatOpen && (
-        <div className="fixed bottom-0 right-0 sm:bottom-24 sm:right-6 w-full h-[80vh] sm:w-80 sm:h-96 bg-white border border-gray-300 sm:rounded-xl shadow-xl flex flex-col z-50">
-          <div className="bg-blue-600 text-white px-4 py-3 sm:rounded-t-xl font-semibold flex justify-between items-center">
+      {/* Chat window - only visible when logged in AND opened */}
+      {loggedInEmail && isChatOpen && (
+        <div className="fixed bottom-0 right-0 sm:bottom-24 sm:right-6 w-full h-[85vh] sm:w-96 sm:h-[min(28rem,70vh)] max-h-[85vh] bg-white border border-gray-300 sm:rounded-xl shadow-xl flex flex-col z-50">
+          <div className="bg-blue-600 text-white px-4 py-3 sm:rounded-t-xl font-semibold flex justify-between items-center flex-shrink-0">
             AI Assistant
             <button onClick={() => setIsChatOpen(false)} className="sm:hidden text-white text-xl">✕</button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 min-h-0">
             {chatMessages.length === 0 && (
               <p className="text-gray-400 text-sm text-center mt-8">
                 Ask me anything about products, labels, or how to use this site!
@@ -484,7 +486,7 @@ function App() {
             <div ref={chatEndRef} />
           </div>
 
-          <div className="border-t border-gray-200 p-3 flex gap-2">
+          <div className="border-t border-gray-200 p-3 flex gap-2 flex-shrink-0">
             <textarea
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
