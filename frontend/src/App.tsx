@@ -236,11 +236,11 @@ function App() {
         </div>
       </nav>
 
-      <section className="text-center py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-b from-blue-50 to-white">
+      <section className="flex flex-col items-center text-center py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-b from-blue-50 to-white">
         <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-6">
           Understand Any Product,<br />From Any Country, Instantly
         </h1>
-        <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+        <p className="text-base sm:text-xl text-gray-600 max-w-2xl mb-8">
           AI-powered translation, classification, and trade intelligence
           for importers, exporters, and compliance teams worldwide.
         </p>
