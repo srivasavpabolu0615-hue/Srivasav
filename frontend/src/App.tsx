@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-
+ 
 const BACKEND_URL = 'https://global-label-decode-backend.onrender.com';
-
+ 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('login'); // 'login' or 'register'
@@ -9,32 +9,37 @@ function App() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+ 
+  // tracks whether someone is currently logged in
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
-
+ 
+  // Image analysis feature state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState('');
   const [analysisError, setAnalysisError] = useState('');
-
+ 
+  // Chat assistant state
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-
+ 
+  // auto-scroll chat to the latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
-
+ 
+  // check if user is already logged in when the page loads
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
     if (savedEmail) {
       setLoggedInEmail(savedEmail);
     }
   }, []);
-
+ 
   const openModal = (mode: string) => {
     setModalMode(mode);
     setMessage('');
@@ -42,20 +47,23 @@ function App() {
     setPassword('');
     setIsModalOpen(true);
   };
-
+ 
   const closeModal = () => {
     setIsModalOpen(false);
   };
-
+ 
+  // logs the user out
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     setLoggedInEmail(null);
     setIsChatOpen(false);
   };
-
+ 
+  // friendlier, more specific error messages
   const getFriendlyError = (context: 'auth' | 'analyze' | 'chat', data: any, response?: Response) => {
     if (data?.error) {
+      // Pass through specific backend messages, they're already clear
       return data.error;
     }
     if (response && response.status === 429) {
@@ -68,30 +76,30 @@ function App() {
     if (context === 'analyze') return 'Could not analyze this image right now. Please try again.';
     return 'Something went wrong. Please try again.';
   };
-
+ 
   const getNetworkErrorMessage = () => {
     if (!navigator.onLine) {
       return "You appear to be offline. Please check your internet connection and try again.";
     }
     return 'Could not reach the server. It may be starting up — please wait a few seconds and try again.';
   };
-
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     setIsSubmitting(true);
-
+ 
     const endpoint = modalMode === 'login' ? '/login' : '/register';
-
+ 
     try {
       const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
+ 
       const data = await response.json();
-
+ 
       if (!response.ok) {
         setMessage(getFriendlyError('auth', data, response));
       } else {
@@ -111,7 +119,7 @@ function App() {
       setIsSubmitting(false);
     }
   };
-
+ 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -125,25 +133,25 @@ function App() {
       setAnalysisError('');
     }
   };
-
+ 
   const handleAnalyze = async () => {
     if (!selectedFile) return;
-
+ 
     setIsAnalyzing(true);
     setAnalysisResult('');
     setAnalysisError('');
-
+ 
     const formData = new FormData();
     formData.append('image', selectedFile);
-
+ 
     try {
       const response = await fetch(`${BACKEND_URL}/analyze`, {
         method: 'POST',
         body: formData,
       });
-
+ 
       const data = await response.json();
-
+ 
       if (!response.ok) {
         setAnalysisError(getFriendlyError('analyze', data, response));
       } else {
@@ -155,24 +163,24 @@ function App() {
       setIsAnalyzing(false);
     }
   };
-
+ 
   const handleSendChat = async () => {
     if (!chatInput.trim()) return;
-
+ 
     const newMessages = [...chatMessages, { role: 'user', text: chatInput }];
     setChatMessages(newMessages);
     setChatInput('');
     setIsChatLoading(true);
-
+ 
     try {
       const response = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: newMessages }),
       });
-
+ 
       const data = await response.json();
-
+ 
       if (!response.ok) {
         setChatMessages([...newMessages, { role: 'assistant', text: getFriendlyError('chat', data, response) }]);
       } else {
@@ -184,16 +192,17 @@ function App() {
       setIsChatLoading(false);
     }
   };
-
+ 
   const handleChatKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendChat();
     }
   };
-
+ 
   return (
     <div className="min-h-screen bg-white">
+      {/* Navbar - responsive: links hide on small screens, logo shrinks */}
       <nav className="flex items-center justify-between px-4 sm:px-8 py-4 shadow-md">
         <div className="text-base sm:text-xl font-bold text-blue-600 truncate">
           Global AI Product Intelligence
@@ -235,7 +244,7 @@ function App() {
           )}
         </div>
       </nav>
-
+ 
       <section className="flex flex-col items-center text-center py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-b from-blue-50 to-white">
         <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-6">
           Understand Any Product,<br />From Any Country, Instantly
@@ -251,7 +260,7 @@ function App() {
           Get Started Free
         </button>
       </section>
-
+ 
       <section id="try-it-now" className="py-16 sm:py-20 px-4 sm:px-6 max-w-3xl mx-auto text-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
           Try It Now
@@ -259,7 +268,7 @@ function App() {
         <p className="text-gray-600 mb-8">
           Upload a photo of any product label — in any language — and see it explained in English.
         </p>
-
+ 
         <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-8">
           <input
             type="file"
@@ -267,7 +276,7 @@ function App() {
             onChange={handleFileChange}
             className="mb-4 max-w-full text-sm"
           />
-
+ 
           {previewUrl && (
             <div className="mb-4">
               <img
@@ -277,7 +286,7 @@ function App() {
               />
             </div>
           )}
-
+ 
           <button
             onClick={handleAnalyze}
             disabled={!selectedFile || isAnalyzing}
@@ -286,18 +295,18 @@ function App() {
             {isAnalyzing ? 'Analyzing... (this can take up to 30s)' : 'Analyze Label'}
           </button>
         </div>
-
+ 
         {analysisError && (
           <p className="mt-6 text-red-600 text-sm sm:text-base">{analysisError}</p>
         )}
-
+ 
         {analysisResult && (
           <div className="mt-8 text-left bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 whitespace-pre-wrap text-gray-800 text-sm sm:text-base">
             {analysisResult}
           </div>
         )}
       </section>
-
+ 
       <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 max-w-6xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-4">
           Everything You Need for Global Trade
@@ -335,7 +344,7 @@ function App() {
           </div>
         </div>
       </section>
-
+ 
       <section id="pricing" className="py-16 sm:py-20 px-4 sm:px-6 bg-gray-50 text-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
           Free for Everyone
@@ -351,7 +360,7 @@ function App() {
           Get Started Free
         </button>
       </section>
-
+ 
       <footer className="bg-gray-900 text-gray-300 py-10 px-4 sm:px-6 mt-10">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
           <div className="text-white font-semibold">
@@ -370,9 +379,13 @@ function App() {
           </div>
         </div>
       </footer>
-
+ 
+      {/* Login/Register modal - responsive width & padding */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
+        >
           <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={closeModal}
@@ -432,7 +445,8 @@ function App() {
           </div>
         </div>
       )}
-
+ 
+      {/* Floating chat button - only visible when logged in */}
       {loggedInEmail && (
         <button
           onClick={() => setIsChatOpen(!isChatOpen)}
@@ -441,14 +455,18 @@ function App() {
           {isChatOpen ? '✕' : '💬'}
         </button>
       )}
-
+ 
+      {/* Chat window - only visible when logged in AND opened.
+          Sizing uses viewport-relative units with a max-height cap so it
+          always fits on small laptop windows and mobile screens, even when
+          the browser is zoomed in. */}
       {loggedInEmail && isChatOpen && (
         <div className="fixed bottom-0 right-0 sm:bottom-24 sm:right-6 w-full h-[85vh] sm:w-96 sm:h-[min(28rem,calc(100vh-8rem))] bg-white border border-gray-300 sm:rounded-xl shadow-xl flex flex-col z-50">
           <div className="bg-blue-600 text-white px-4 py-3 sm:rounded-t-xl font-semibold flex justify-between items-center flex-shrink-0">
             AI Assistant
             <button onClick={() => setIsChatOpen(false)} className="sm:hidden text-white text-xl">✕</button>
           </div>
-
+ 
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 min-h-0">
             {chatMessages.length === 0 && (
               <p className="text-gray-400 text-sm text-center mt-8">
@@ -474,7 +492,7 @@ function App() {
             )}
             <div ref={chatEndRef} />
           </div>
-
+ 
           <div className="border-t border-gray-200 p-3 flex gap-2 flex-shrink-0">
             <textarea
               value={chatInput}
@@ -497,5 +515,6 @@ function App() {
     </div>
   )
 }
-
+ 
 export default App
+ 
