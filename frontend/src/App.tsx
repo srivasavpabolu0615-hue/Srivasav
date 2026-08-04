@@ -282,21 +282,29 @@ function App() {
         </div>
       </nav>
 
-      <section className="flex flex-col items-center text-center py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-b from-blue-50 to-white">
-        <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-6">
-          Understand Any Product,<br />From Any Country, Instantly
-        </h1>
-        <p className="text-base sm:text-xl text-gray-600 max-w-2xl mb-8">
-          AI-powered translation, classification, and trade intelligence
-          for importers, exporters, and compliance teams worldwide.
-        </p>
-        <button
-          onClick={() => openModal('register')}
-          className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white text-base sm:text-lg rounded-lg hover:bg-blue-700"
-        >
-          Get Started Free
-        </button>
-      </section>
+      {loggedInEmail ? (
+        <section className="flex flex-col items-center text-center py-10 sm:py-14 px-4 sm:px-6 bg-gradient-to-b from-blue-50 to-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Welcome back!
+          </h1>
+        </section>
+      ) : (
+        <section className="flex flex-col items-center text-center py-16 sm:py-24 px-4 sm:px-6 bg-gradient-to-b from-blue-50 to-white">
+          <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-6">
+            Understand Any Product,<br />From Any Country, Instantly
+          </h1>
+          <p className="text-base sm:text-xl text-gray-600 max-w-2xl mb-8">
+            AI-powered translation, classification, and trade intelligence
+            for importers, exporters, and compliance teams worldwide.
+          </p>
+          <button
+            onClick={() => openModal('register')}
+            className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white text-base sm:text-lg rounded-lg hover:bg-blue-700"
+          >
+            Get Started Free
+          </button>
+        </section>
+      )}
 
       <section id="try-it-now" className="py-16 sm:py-20 px-4 sm:px-6 max-w-3xl mx-auto text-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
