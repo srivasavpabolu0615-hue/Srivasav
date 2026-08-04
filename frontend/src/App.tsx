@@ -375,59 +375,64 @@ function App() {
         )}
       </section>
 
-      <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 max-w-6xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-4">
-          Everything You Need for Global Trade
-        </h2>
-        <p className="text-center text-gray-600 mb-12">
-          Powerful AI tools built for importers, exporters, and compliance teams
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          <div className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              AI Translation
-            </h3>
-            <p className="text-gray-600">
-              Instantly translate product names and descriptions from any
-              language into English with confidence scoring.
+      {!loggedInEmail && (
+        <>
+          <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 max-w-6xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-4">
+              Everything You Need for Global Trade
+            </h2>
+            <p className="text-center text-gray-600 mb-12">
+              Powerful AI tools built for importers, exporters, and compliance teams
             </p>
-          </div>
-          <div className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              HS Code Assistant
-            </h3>
-            <p className="text-gray-600">
-              Get accurate HS Code suggestions with clear explanations,
-              so you can classify products correctly every time.
-            </p>
-          </div>
-          <div className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Trade Intelligence
-            </h3>
-            <p className="text-gray-600">
-              Access country of origin data, trade regulations, and
-              compliance insights in one unified dashboard.
-            </p>
-          </div>
-        </div>
-      </section>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+              <div className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  AI Translation
+                </h3>
+                <p className="text-gray-600">
+                  Instantly translate product names and descriptions from any
+                  language into English with confidence scoring.
+                </p>
+              </div>
+              <div className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  HS Code Assistant
+                </h3>
+                <p className="text-gray-600">
+                  Get accurate HS Code suggestions with clear explanations,
+                  so you can classify products correctly every time.
+                </p>
+              </div>
+              <div className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Trade Intelligence
+                </h3>
+                <p className="text-gray-600">
+                  Access country of origin data, trade regulations, and
+                  compliance insights in one unified dashboard.
+                </p>
+              </div>
+            </div>
+          </section>
 
-      <section id="pricing" className="flex flex-col items-center py-16 sm:py-20 px-4 sm:px-6 bg-gray-50 text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
-          Free for Everyone
-        </h2>
-        <p className="text-gray-600 max-w-2xl mb-8">
-          Our platform is completely free to use — no hidden fees, no credit card required.
-          Every business, big or small, deserves access to powerful trade intelligence tools.
-        </p>
-        <button
-          onClick={() => openModal('register')}
-          className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white text-base sm:text-lg rounded-lg hover:bg-blue-700"
-        >
-          Get Started Free
-        </button>
-      </section>
+          <section id="pricing" className="flex flex-col items-center py-16 sm:py-20 px-4 sm:px-6 bg-gray-50 text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+              Free for Everyone
+            </h2>
+            <p className="text-gray-600 max-w-2xl mb-8">
+              Our platform is completely free to use — no hidden fees, no credit card required.
+              Every business, big or small, deserves access to powerful trade intelligence tools.
+            </p>
+            <button
+              onClick={() => openModal('register')}
+              className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white text-base sm:text-lg rounded-lg hover:bg-blue-700"
+            >
+              Get Started Free
+            </button>
+          </section>
+        </>
+      )}
+
 
       <footer className="bg-gray-900 text-gray-300 py-10 px-4 sm:px-6 mt-10">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
