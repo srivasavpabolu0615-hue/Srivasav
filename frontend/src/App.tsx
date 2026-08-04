@@ -345,11 +345,11 @@ function App() {
         </div>
       </section>
  
-      <section id="pricing" className="py-16 sm:py-20 px-4 sm:px-6 bg-gray-50 text-center">
+      <section id="pricing" className="flex flex-col items-center py-16 sm:py-20 px-4 sm:px-6 bg-gray-50 text-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
           Free for Everyone
         </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+        <p className="text-gray-600 max-w-2xl mb-8">
           Our platform is completely free to use — no hidden fees, no credit card required.
           Every business, big or small, deserves access to powerful trade intelligence tools.
         </p>
