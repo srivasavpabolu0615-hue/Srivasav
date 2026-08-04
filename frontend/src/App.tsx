@@ -126,17 +126,37 @@ function App() {
     }
   };
 
+  const processSelectedImage = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setAnalysisError('Please choose an image file (JPG, PNG, etc).');
+      return;
+    }
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setAnalysisResult('');
+    setAnalysisError('');
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        setAnalysisError('Please choose an image file (JPG, PNG, etc).');
-        return;
+      processSelectedImage(file);
+    }
+  };
+
+  const handlePasteImage = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          processSelectedImage(file);
+        }
+        break;
       }
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setAnalysisResult('');
-      setAnalysisError('');
     }
   };
 
@@ -149,6 +169,7 @@ function App() {
       fileInputRef.current.value = '';
     }
   };
+
 
   const handleAnalyze = async () => {
     if (!selectedFile) return;
@@ -287,7 +308,14 @@ function App() {
 
         {loggedInEmail ? (
           <>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-8">
+            <div
+              onPaste={handlePasteImage}
+              tabIndex={0}
+              className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-8 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <p className="text-xs text-gray-400 mb-3">
+                Click here and press Ctrl+V to paste a copied image, or choose a file below
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
