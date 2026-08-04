@@ -58,6 +58,11 @@ function App() {
     localStorage.removeItem('userEmail');
     setLoggedInEmail(null);
     setIsChatOpen(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setAnalysisResult('');
+    setAnalysisError('');
+    setChatMessages([]);
   };
  
   // friendlier, more specific error messages
@@ -269,40 +274,56 @@ function App() {
           Upload a photo of any product label — in any language — and see it explained in English.
         </p>
  
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-8">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="mb-4 max-w-full text-sm"
-          />
- 
-          {previewUrl && (
-            <div className="mb-4">
-              <img
-                src={previewUrl}
-                alt="Selected preview"
-                className="max-h-64 mx-auto rounded-lg shadow"
+        {loggedInEmail ? (
+          <>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-8">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="mb-4 max-w-full text-sm"
               />
+ 
+              {previewUrl && (
+                <div className="mb-4">
+                  <img
+                    src={previewUrl}
+                    alt="Selected preview"
+                    className="max-h-64 mx-auto rounded-lg shadow"
+                  />
+                </div>
+              )}
+ 
+              <button
+                onClick={handleAnalyze}
+                disabled={!selectedFile || isAnalyzing}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {isAnalyzing ? 'Analyzing... (this can take up to 30s)' : 'Analyze Label'}
+              </button>
             </div>
-          )}
  
-          <button
-            onClick={handleAnalyze}
-            disabled={!selectedFile || isAnalyzing}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            {isAnalyzing ? 'Analyzing... (this can take up to 30s)' : 'Analyze Label'}
-          </button>
-        </div>
+            {analysisError && (
+              <p className="mt-6 text-red-600 text-sm sm:text-base">{analysisError}</p>
+            )}
  
-        {analysisError && (
-          <p className="mt-6 text-red-600 text-sm sm:text-base">{analysisError}</p>
-        )}
- 
-        {analysisResult && (
-          <div className="mt-8 text-left bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 whitespace-pre-wrap text-gray-800 text-sm sm:text-base">
-            {analysisResult}
+            {analysisResult && (
+              <div className="mt-8 text-left bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 whitespace-pre-wrap text-gray-800 text-sm sm:text-base">
+                {analysisResult}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 sm:p-12 flex flex-col items-center">
+            <p className="text-gray-600 mb-4">
+              Please log in or create a free account to try image analysis.
+            </p>
+            <button
+              onClick={() => openModal('login')}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Log In / Register
+            </button>
           </div>
         )}
       </section>
